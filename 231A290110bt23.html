@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài tập 23 - Game kiểm tra tốc độ - Trương Long - 231A290110</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #14171f;
+            color: #e8ecf3;
+            font-family: "Segoe UI", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 12px;
+        }
+        h1 { margin: 0 0 4px; font-size: 1.6rem; }
+        .sv { color: #ffb454; margin: 0 0 18px; }
+
+        /* Thông tin: điểm số + thời gian */
+        .info {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+        .box {
+            background: #222836;
+            border: 1px solid #3a4256;
+            border-radius: 10px;
+            padding: 10px 22px;
+            min-width: 160px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .box b { font-size: 1.6rem; color: #ffb454; }
+
+        /* Khu vực chơi 600x400, định vị tuyệt đối cho mục tiêu */
+        #arena {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background: linear-gradient(135deg, #2b3a67, #1b2440);
+            border: 3px solid #ffb454;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: crosshair;
+            user-select: none;
+        }
+        #target {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #ff9a9a, #e53935);
+            border: 3px solid #fff;
+            box-shadow: 0 0 14px rgba(255, 90, 90, .8);
+            cursor: pointer;
+            display: none;
+        }
+        #overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 12, 20, .78);
+            text-align: center;
+            padding: 20px;
+        }
+        #overlay h2 { margin: 0 0 8px; font-size: 1.8rem; }
+        #overlay p { margin: 0; font-size: 1.15rem; }
+
+        button#startBtn {
+            margin-top: 16px;
+            padding: 12px 32px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #14171f;
+            background: #ffb454;
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button#startBtn:hover { background: #ffc978; }
+        button#startBtn:disabled { opacity: .5; cursor: not-allowed; }
+
+        .hint { color: #9aa4b2; margin-top: 12px; font-size: .95rem; }
+        @media (max-width: 640px) {
+            #arena { width: 100%; max-width: 600px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>&#127919; Game kiểm tra tốc độ phản xạ</h1>
+    <p class="sv">Trương Long &middot; MSSV: 231A290110 &middot; Bài tập 23</p>
+
+    <div class="info">
+        <div class="box">Điểm số: <b id="score">0</b></div>
+        <div class="box">Thời gian: <b id="time">30</b>s</div>
+    </div>
+
+    <div id="arena">
+        <div id="target"></div>
+        <div id="overlay">
+            <h2 id="overlayTitle">Sẵn sàng chưa?</h2>
+            <p id="overlayText">Click trúng hình tròn đỏ càng nhiều càng tốt trong 30 giây.</p>
+        </div>
+    </div>
+
+    <button id="startBtn">Bắt đầu trò chơi</button>
+    <p class="hint">Mục tiêu tự đổi vị trí mỗi 1 giây. Click trúng thì +1 điểm và mục tiêu nhảy sang chỗ mới ngay.</p>
+
+    <script>
+        var GAME_TIME = 30;      // thời gian chơi (giây)
+        var MOVE_EVERY = 1000;   // mục tiêu tự đổi chỗ sau 1 giây (ms)
+
+        var arena = document.getElementById('arena');
+        var target = document.getElementById('target');
+        var scoreEl = document.getElementById('score');
+        var timeEl = document.getElementById('time');
+        var startBtn = document.getElementById('startBtn');
+        var overlay = document.getElementById('overlay');
+        var overlayTitle = document.getElementById('overlayTitle');
+        var overlayText = document.getElementById('overlayText');
+
+        var score = 0;
+        var timeLeft = GAME_TIME;
+        var playing = false;
+        var countdownTimer = null;
+        var moveTimer = null;
+
+        // Đặt mục tiêu ở tọa độ top/left ngẫu nhiên trong #arena
+        function moveTarget() {
+            var maxLeft = arena.clientWidth - target.offsetWidth;
+            var maxTop = arena.clientHeight - target.offsetHeight;
+            target.style.left = Math.floor(Math.random() * (maxLeft + 1)) + 'px';
+            target.style.top = Math.floor(Math.random() * (maxTop + 1)) + 'px';
+        }
+
+        // Hẹn giờ: sau 1 giây không ai click thì mục tiêu tự đổi chỗ
+        function restartMoveTimer() {
+            clearInterval(moveTimer);
+            moveTimer = setInterval(moveTarget, MOVE_EVERY);
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = GAME_TIME;
+            playing = true;
+            scoreEl.textContent = score;
+            timeEl.textContent = timeLeft;
+
+            overlay.style.display = 'none';
+            target.style.display = 'block';
+            startBtn.disabled = true;
+
+            moveTarget();
+            restartMoveTimer();
+
+            clearInterval(countdownTimer);
+            countdownTimer = setInterval(function () {
+                timeLeft--;
+                timeEl.textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            playing = false;
+            clearInterval(countdownTimer);
+            clearInterval(moveTimer);
+
+            // Khóa mọi thao tác: ẩn mục tiêu, phủ lớp chặn click lên khu vực chơi
+            target.style.display = 'none';
+            overlayTitle.textContent = 'Hết giờ!';
+            overlayText.innerHTML = 'Tổng điểm của bạn: <b style="color:#ffb454;font-size:1.6rem">' + score + '</b>';
+            overlay.style.display = 'flex';
+
+            startBtn.disabled = false;
+            startBtn.textContent = 'Chơi lại';
+        }
+
+        // Click trúng mục tiêu: +1 điểm, đổi vị trí ngay, tính lại nhịp 1 giây
+        target.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (!playing) return;
+            score++;
+            scoreEl.textContent = score;
+            moveTarget();
+            restartMoveTimer();
+        });
+
+        startBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
