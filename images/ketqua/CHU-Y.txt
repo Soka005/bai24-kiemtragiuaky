@@ -1,0 +1,4 @@
+Bo anh chup man hinh ket qua (co ma SV) vao thu muc nay, dat ten dung:
+bai17-1.png bai17-2.png | bai18-1.png bai18-2.png | bai19-1.png bai19-2.png
+bai20-1.png bai20-2.png | bai21-1.png bai21-2.png bai21-3.png bai21-4.png | bai22-1.png bai22-2.png
+Thieu anh nao thi trang se hien khung "Chua co anh".
